@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>حبّي ليكي أكبر من الكون ❤️</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', 'Tahoma', 'Arial', sans-serif;
+        }
+
+        /* البطاقة الجميلة */
+        .love-letter {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%) translateY(120px);
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(20px);
+            border-radius: 30px;
+            padding: 18px 35px;
+            text-align: center;
+            color: white;
+            border: 1px solid rgba(255,200,200,0.3);
+            border-top: 3px solid #ff66aa;
+            box-shadow: 0 0 60px rgba(255,51,102,0.4);
+            z-index: 200;
+            transition: transform 0.4s cubic-bezier(0.2,0.9,0.4,1.1);
+            pointer-events: none;
+            font-size: 22px;
+            font-weight: bold;
+            max-width: 85%;
+            direction: rtl;
+        }
+
+        .love-letter.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .love-letter .heart {
+            color: #ff66aa;
+            animation: heartbeat 0.8s infinite;
+            display: inline-block;
+            margin: 0 8px;
+        }
+
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .instruction {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(8px);
+            color: rgba(255,255,255,0.6);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 11px;
+            z-index: 200;
+            pointer-events: none;
+        }
+
+        @media (max-width: 768px) {
+            .love-letter { font-size: 14px; padding: 12px 20px; width: 85%; white-space: normal; }
+        }
+    </style>
+</head>
+<body>
+    <div id="messageBox" class="love-letter">
+        <span class="heart">❤️</span> اضغط على أي صورة عشان تقرأ رسالتي <span class="heart">❤️</span>
+    </div>
+    <div class="instruction">
+        🖱️ اسحب الفأرة لتدور في الفضاء | اضغط على الصورة اللي بتحبها
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // ==============================================
+        // كلام الحب لكل صورة (21 رسالة من القلب)
+        // ==============================================
+        const loveMessages = [
+            "✨ حبّي ليكي أكبر من النجوم اللي في السما كلها ✨",
+            "💫 أنتِ كالقمر.. حتى لما يكون ضايع، بترجعي تضي لي 💫",
+            "🌌 الكون واسع.. بس دايمًا بعرف ألقيكي فيه 🌌",
+            "💖 لو كل نجمة أمنية.. كنت تمنيتك ألف مرة 💖",
+            "⭐ شوفتي المجرة؟ حبّي ليكي أكبر منها بكتير ⭐",
+            "🌠 أنتِ اللي خليتي الفضاء دا حلو في عينيا 🌠",
+            "💘 حتى الثقوب السوداء بتجذبها جمالك 💘",
+            "🌟 أنتِ النجم اللي مَدار الكون كلّه حواليكي 🌟",
+            "💕 حبّي ليكي مش متقيد بزمن ولا مكان.. حب أبدي 💕",
+            "🌹 لو عندي كل الكوايب.. كنت جبتلك القمر 🌹",
+            "💗 حتى المجرة بتغار من جمال قلبك 💗",
+            "🎇 أنتِ سبب وجودي في الفضاء دا كله 🎇",
+            "💓 لو الزمن دار.. هفضل أدور عليكي أنتِ بس 💓",
+            "🌠 كأنك نجم سقط في حضني.. وخلاني أغني 🌠",
+            "💝 أنتِ الحب اللي الضوء نفسه بيحسده عليا 💝",
+            "⭐ دنيتي مكانها بين عينيكي يا حلمي ⭐",
+            "💖 كل صورة في المعرض دا بتكلم عن سبب بحبك 💖",
+            "🌈 أنتِ لوني في الفضاء الأسود.. أنتِ أملّي 🌈",
+            "🎈 خليكي جنبي.. عشان الفضاء يبقى دافي 🎈",
+            "💖 قلبك أكبر من الكون.. عقبال ما أوسعه بحبك 💖",
+            "♾️ أنتِ أنتِ أنتِ.. وأي سبب تاني مش مهم ♾️"
+        ];
+
+        // إعداد المشهد
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x010010);
+        scene.fog = new THREE.FogExp2(0x010010, 0.00025);
+
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 2, 16);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        // ==============================================
+        // المجرة المركزية (واقعية جداً)
+        // ==============================================
+        const galaxyGroup = new THREE.Group();
+
+        // القلب النابض في نص المجرة (فكرة زيادة جمال)
+        const coreMat = new THREE.MeshStandardMaterial({
+            color: 0xff44aa,
+            emissive: 0xff2266,
+            emissiveIntensity: 1.3,
+            metalness: 0.9,
+            roughness: 0.2
+        });
+        const coreSphere = new THREE.Mesh(new THREE.SphereGeometry(0.95, 64, 64), coreMat);
+        galaxyGroup.add(coreSphere);
+
+        // حلقات المجرة
+        const ringMat1 = new THREE.MeshStandardMaterial({ color: 0xff88bb, emissive: 0xff44aa, emissiveIntensity: 0.5 });
+        const ring1 = new THREE.Mesh(new THREE.TorusGeometry(1.5, 0.07, 64, 300), ringMat1);
+        ring1.rotation.x = Math.PI / 2;
+        galaxyGroup.add(ring1);
+
+        const ring2 = new THREE.Mesh(new THREE.TorusGeometry(2.0, 0.06, 64, 300), ringMat1);
+        ring2.rotation.x = Math.PI / 2 + 0.25;
+        ring2.rotation.z = 0.2;
+        galaxyGroup.add(ring2);
+
+        const ring3 = new THREE.Mesh(new THREE.TorusGeometry(2.5, 0.05, 64, 300), ringMat1);
+        ring3.rotation.x = Math.PI / 2 - 0.1;
+        galaxyGroup.add(ring3);
+
+        // جزيئات الغبار حول المجرة
+        const dustCount = 2000;
+        const dustGeo = new THREE.BufferGeometry();
+        const dustPos = new Float32Array(dustCount * 3);
+        for (let i = 0; i < dustCount; i++) {
+            const r = 2.2 + Math.random() * 2;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            dustPos[i*3] = r * Math.sin(phi) * Math.cos(theta);
+            dustPos[i*3+1] = r * Math.sin(phi) * Math.sin(theta) * 0.4;
+            dustPos[i*3+2] = r * Math.cos(phi);
+        }
+        dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+        const dustMat = new THREE.PointsMaterial({ color: 0xffaacc, size: 0.028, transparent: true, opacity: 0.5 });
+        const dustParticles = new THREE.Points(dustGeo, dustMat);
+        galaxyGroup.add(dustParticles);
+
+        scene.add(galaxyGroup);
+
+        // ==============================================
+        // خلفية نجوم (آلاف النجوم الحقيقية)
+        // ==============================================
+        const starCount1 = 3500;
+        const starGeo1 = new THREE.BufferGeometry();
+        const starPos1 = new Float32Array(starCount1 * 3);
+        for (let i = 0; i < starCount1; i++) {
+            starPos1[i*3] = (Math.random() - 0.5) * 450;
+            starPos1[i*3+1] = (Math.random() - 0.5) * 280;
+            starPos1[i*3+2] = (Math.random() - 0.5) * 180 - 50;
+        }
+        starGeo1.setAttribute('position', new THREE.BufferAttribute(starPos1, 3));
+        const starMat1 = new THREE.PointsMaterial({ color: 0xffffff, size: 0.09, transparent: true, opacity: 0.7 });
+        const starsLayer1 = new THREE.Points(starGeo1, starMat1);
+        scene.add(starsLayer1);
+
+        const starCount2 = 2500;
+        const starGeo2 = new THREE.BufferGeometry();
+        const starPos2 = new Float32Array(starCount2 * 3);
+        for (let i = 0; i < starCount2; i++) {
+            starPos2[i*3] = (Math.random() - 0.5) * 300;
+            starPos2[i*3+1] = (Math.random() - 0.5) * 200;
+            starPos2[i*3+2] = (Math.random() - 0.5) * 120 - 20;
+        }
+        starGeo2.setAttribute('position', new THREE.BufferAttribute(starPos2, 3));
+        const starMat2 = new THREE.PointsMaterial({ color: 0xaaddff, size: 0.13, transparent: true, opacity: 0.8 });
+        const starsLayer2 = new THREE.Points(starGeo2, starMat2);
+        scene.add(starsLayer2);
+
+        // نجوم متحركة
+        const movingStarsCount = 800;
+        const movingStarsGeo = new THREE.BufferGeometry();
+        const movingStarsPos = new Float32Array(movingStarsCount * 3);
+        for (let i = 0; i < movingStarsCount; i++) {
+            movingStarsPos[i*3] = (Math.random() - 0.5) * 200;
+            movingStarsPos[i*3+1] = (Math.random() - 0.5) * 150;
+            movingStarsPos[i*3+2] = (Math.random() - 0.5) * 100;
+        }
+        movingStarsGeo.setAttribute('position', new THREE.BufferAttribute(movingStarsPos, 3));
+        const movingStarsMat = new THREE.PointsMaterial({ color: 0xffccaa, size: 0.1, transparent: true, opacity: 0.6 });
+        const movingStars = new THREE.Points(movingStarsGeo, movingStarsMat);
+        scene.add(movingStars);
+
+        // ==============================================
+        // 21 صورة - كل صورة حركتها عشوائية و مختلفة
+        // ==============================================
+        const imagesGroup = new THREE.Group();
+        scene.add(imagesGroup);
+
+        const imagePlanes = [];
+        const textureLoader = new THREE.TextureLoader();
+
+        // لكل صورة سرعة ومسار عشوائي مختلف
+        const speeds = [];
+        const orbitsRadius = [];
+        const orbitsSpeed = [];
+        const verticalSpeed = [];
+        const floatAmplitude = [];
+
+        for (let i = 0; i < 21; i++) {
+            // موقع أولي عشوائي في الفضاء (يبعد عن المجرة)
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 5 + Math.random() * 2.5;
+            const x = Math.cos(angle) * radius;
+            const z = Math.sin(angle) * radius;
+            const y = (Math.random() - 0.5) * 3.5;
+
+            // صورة مؤقتة أثناء التحميل
+            const canvasTemp = document.createElement('canvas');
+            canvasTemp.width = 512;
+            canvasTemp.height = 512;
+            const ctx = canvasTemp.getContext('2d');
+            ctx.fillStyle = '#1a0a2e';
+            ctx.fillRect(0, 0, 512, 512);
+            ctx.fillStyle = '#ff66aa';
+            ctx.font = 'Bold 45px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('❤️', 256, 280);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '24px Arial';
+            ctx.fillText(`صورة ${i+1}`, 256, 380);
+            
+            const tempTexture = new THREE.CanvasTexture(canvasTemp);
+            const material = new THREE.MeshStandardMaterial({
+                map: tempTexture,
+                side: THREE.DoubleSide,
+                emissive: 0x331133,
+                emissiveIntensity: 0.2,
+                metalness: 0.2,
+                roughness: 0.3
+            });
+
+            const geometry = new THREE.PlaneGeometry(1.4, 1.4);
+            const plane = new THREE.Mesh(geometry, material);
+            plane.position.set(x, y, z);
+            plane.userData = {
+                index: i,
+                message: loveMessages[i],
+                imgPath: `photo${i+1}.jpeg`
+            };
+            
+            // إطار لامع
+            const borderGeo = new THREE.BoxGeometry(1.48, 1.48, 0.05);
+            const borderMat = new THREE.MeshStandardMaterial({ color: 0xffaa77, emissive: 0xff6644, emissiveIntensity: 0.35 });
+            const border = new THREE.Mesh(borderGeo, borderMat);
+            plane.add(border);
+            
+            // توجيه الصورة ناحية الكاميرا ابتدائي
+            plane.lookAt(0, y, 0);
+            
+            imagesGroup.add(plane);
+            imagePlanes.push(plane);
+            
+            // حفظ بيانات حركة عشوائية مميزة لكل صورة
+            speeds.push({
+                radius: radius,
+                angle: angle,
+                speed: 0.1 + Math.random() * 0.3,
+                ySpeed: 0.2 + Math.random() * 0.6,
+                yOffset: y,
+                amplitude: 0.8 + Math.random() * 1.2,
+                xOffset: 0,
+                zOffset: 0
+            });
+            
+            // تحميل الصورة الحقيقية
+            textureLoader.load(`photo${i+1}.jpeg`, (texture) => {
+                plane.material.map = texture;
+                plane.material.needsUpdate = true;
+            }, undefined, (err) => {
+                console.warn(`photo${i+1}.jpeg مش موجودة`);
+            });
+        }
+
+        // ==============================================
+        // إعداد الإضاءة (واقعية)
+        // ==============================================
+        const ambientLight = new THREE.AmbientLight(0x222222);
+        scene.add(ambientLight);
+        
+        const coreLight = new THREE.PointLight(0xff44aa, 1.4, 22);
+        coreLight.position.set(0, 0, 0);
+        scene.add(coreLight);
+        
+        const fillLightBlue = new THREE.PointLight(0x4488ff, 0.6);
+        fillLightBlue.position.set(3, 2, -4);
+        scene.add(fillLightBlue);
+        
+        const fillLightWarm = new THREE.PointLight(0xffaa66, 0.5);
+        fillLightWarm.position.set(-2, 1, -5);
+        scene.add(fillLightWarm);
+        
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(3, 5, 4);
+        scene.add(dirLight);
+        
+        // إضاءة متحركة ثانية للون
+        const colorLight = new THREE.PointLight(0xff66cc, 0.5);
+        colorLight.position.set(4, 1, 3);
+        scene.add(colorLight);
+        
+        // ==============================================
+        // التفاعل: الضغط على الصورة
+        // ==============================================
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const messageDiv = document.getElementById('messageBox');
+        let timeoutId = null;
+        
+        function showMessage(msg) {
+            messageDiv.innerHTML = `<span class="heart">❤️</span> ${msg} <span class="heart">❤️</span>`;
+            messageDiv.classList.add('show');
+            if (timeoutId) clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                messageDiv.classList.remove('show');
+            }, 5500);
+        }
+        
+        window.addEventListener('click', (event) => {
+            mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
+            mouse.y = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
+            
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(imagePlanes);
+            
+            if (intersects.length > 0) {
+                const clicked = intersects[0].object;
+                const msg = clicked.userData.message;
+                showMessage(msg);
+                
+                // تأثير وميض
+                clicked.material.emissiveIntensity = 1.2;
+                coreLight.intensity = 2.2;
+                setTimeout(() => {
+                    if (clicked.material) clicked.material.emissiveIntensity = 0.2;
+                    coreLight.intensity = 1.4;
+                }, 250);
+            }
+        });
+        
+        // ==============================================
+        // تحريك الكاميرا بالماوس (360 درجة)
+        // ==============================================
+        let targetRotX = 0, targetRotY = 0;
+        let currentRotX = 0, currentRotY = 0;
+        
+        window.addEventListener('mousemove', (event) => {
+            targetRotY = ((event.clientX / window.innerWidth) * 2 - 1) * Math.PI * 0.35;
+            targetRotX = ((event.clientY / window.innerHeight) * 2 - 1) * Math.PI * 0.2;
+        });
+        
+        // ==============================================
+        // الحلقة الرئيسية (حركات عشوائية لكل صورة)
+        // ==============================================
+        let time = 0;
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.012;
+            
+            // حركة المجرة المركزية
+            galaxyGroup.rotation.y += 0.0025;
+            galaxyGroup.rotation.x = Math.sin(time * 0.3) * 0.07;
+            
+            // حركة النجوم المتحركة
+            movingStars.rotation.y += 0.0005;
+            movingStars.rotation.x = Math.sin(time * 0.2) * 0.05;
+            
+            // ***** الحركة العشوائية المختلفة لكل صورة *****
+            imagePlanes.forEach((plane, idx) => {
+                const s = speeds[idx];
+                if (s) {
+                    // دوران حول المجرة بسرعات مختلفة
+                    const newAngle = s.angle + time * s.speed * 0.5;
+                    const radiusNow = s.radius + Math.sin(time * 0.7 + idx) * 0.2;
+                    const newX = Math.cos(newAngle) * radiusNow;
+                    const newZ = Math.sin(newAngle) * radiusNow;
+                    
+                    // حركة عمودية فوق وتحت بمعدل مختلف لكل صورة
+                    const newY = s.yOffset + Math.sin(time * s.ySpeed + idx) * s.amplitude;
+                    
+                    plane.position.x = newX;
+                    plane.position.z = newZ;
+                    plane.position.y = newY;
+                    
+                    // تدوير الصورة لتواجه الكاميرا دايماً
+                    plane.lookAt(camera.position);
+                }
+            });
+            
+            // إضاءة متحركة
+            fillLightBlue.position.x = 3 + Math.sin(time * 0.9) * 1.5;
+            colorLight.position.y = 1.5 + Math.sin(time * 1.1) * 1;
+            colorLight.intensity = 0.5 + Math.sin(time * 1.3) * 0.2;
+            
+            // حركة الكاميرا
+            currentRotX += (targetRotX - currentRotX) * 0.06;
+            currentRotY += (targetRotY - currentRotY) * 0.06;
+            
+            camera.position.x = currentRotY * 3.5;
+            camera.position.y = currentRotX * 2.2 + 1.8;
+            camera.lookAt(0, 0, 0);
+            
+            renderer.render(scene, camera);
+        }
+        
+        animate();
+        
+        // تغيير الحجم
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        // رسالة ترحيب عند بدء التشغيل
+        setTimeout(() => {
+            showMessage("🌌 الكون كله مش كفاية يعبر عن حبي ليكي... بس جيت أحاول 🌌");
+        }, 1500);
+    </script>
+</body>
+</html>
